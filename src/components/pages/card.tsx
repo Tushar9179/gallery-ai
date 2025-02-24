@@ -3,7 +3,6 @@
 import Image from "next/image";
 import React from "react";
 import { CardBody, CardContainer, CardItem } from "../ui/3d-card";
-import Link from "next/link";
 
 // Accept an image source as a prop
 interface ThreeDCardDemoProps {
