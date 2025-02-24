@@ -31,6 +31,12 @@ export default function ExplorePage() {
     setKey((prev) => prev + 1);
   };
 
+  // Function to speak the caption text aloud
+  const handleMicClick = (caption: string) => {
+    const utterance = new SpeechSynthesisUtterance(caption);
+    window.speechSynthesis.speak(utterance);
+  };
+
   return (
     <div className="absolute inset-0 bg-[#000000f5] text-white flex items-center justify-center px-8">
       {/* Main Content Wrapper */}
@@ -67,7 +73,7 @@ export default function ExplorePage() {
           {/* Right Arrow */}
           <button
             onClick={handleNext}
-            className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full transition-all absolute right-[-50px] z-30 shadow-lg hover:shadow-xl transform hover:scale-105 "
+            className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full transition-all absolute right-[-50px] z-30 shadow-lg hover:shadow-xl transform hover:scale-105"
             aria-label="Next image"
           >
             <svg
@@ -87,11 +93,37 @@ export default function ExplorePage() {
           </button>
         </div>
 
-        <div key={key} className="w-full h-auto text-white flex items-center pl-12">
+        <div key={key} className="w-full h-auto text-white flex justify-centre pl-12">
           <TextGenerateEffect
             words={images[currentIndex].caption}
             className="text-[#fafafa]"  // Applying the color #fafafa to the text
           />
+        </div>
+
+        {/* Mic Button */}
+        <div className="flex justify-center mt-4">
+          <button
+            onClick={() => handleMicClick(images[currentIndex].caption)}
+            className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full transition-all"
+            aria-label="Speak Caption"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="lucide lucide-mic"
+            >
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <line x1="12" x2="12" y1="19" y2="22" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
