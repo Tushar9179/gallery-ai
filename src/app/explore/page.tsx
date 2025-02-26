@@ -30,32 +30,48 @@ export default function ExplorePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingStatus, setLoadingStatus] = useState(""); // For more detailed loading status
 
+
+  // Hardcoded fallback captions
+  const fallbackCaptions: { [key: string]: string } = {
+    "image1.jpg": "A glass teapot sitting on a table, holding a bottle of arak, inspired by Derek Jarman. Made of dried flowers, coffee, and musical instruments, with phragmites. A still image from the movie, set in Tehran, full-width, inspired by Jeanne du Maurier. The subject is in brown robes, captured in multi-layered artworks.",
+    "image2.jpg": "A group of ducks floating on a lake, captured in an Unsplash photograph during sunset. The panorama is inspired by Flora Macdonald Reid, with swans and an ocean shoreline visible on the horizon.",
+    "image3.jpg": "A woman standing in front of a bush of purple flowers, a Pexels contest winner. The fashion model has a happy expression, trending on Pexels.",
+    "image4.jpg": "A woman in a pink suit and a man in a white shirt, captured trending on ArtStation. The 30-year-old French woman is walking confidently in the style of Davey Adesida.",
+    "image5.jpg": "A woman taking a picture of herself in a mirror, a Pexels contest winner, inspired by Tran Nguyen. She stands in a grassy field with rippling fabric, symbolizing a distortion of reality.",
+    "image6.jpg": "A man standing in water holding a lantern, featured on Pexels. The scene is set under a moonlit, starry sky, evoking themes of beauty in ugliness, a shining crescent moon, and a sense of longing. The calm ambiance reflects a lunar walk, with the atmosphere of camping.",
+    "image7.jpg": "A person pouring orange juice into a glass, captured on Unsplash in Brazil. The photo shows a large local food spread, with mangoes featured prominently.",
+    "image8.jpg": "A small boat floating in the middle of the ocean, a Pexels contest winner. The image represents a solid object in a void.",
+    "image9.jpg": "A woman in a black top holding a pink ball, depicted in a 90s fashion editorial. The youthful Japanese girl is tall, lanky, and dressed in shamanistic dark blue clothes. The photo features sleek round shapes, with the stone being round as well. The image is playful and cheerful, capturing her in baggy clothing with fringe. This archive photo has a three-color scheme, resembling a magazine photograph.",
+    "image10.jpg": "A man sitting next to a body of water, holding a camera.",
+  };
+
   // Fetch caption for a specific image
   const fetchCaption = async (index: number) => {
+    const imageName = imagePaths[index].split("/").pop() || "";
+    
     try {
       setLoadingStatus(`Analyzing image ${index + 1} of ${imagePaths.length}...`);
-  
+
       const response = await fetch(imagePaths[index]);
       const blob = await response.blob();
-      const file = new File([blob], `image${index}.jpg`, { type: "image/jpeg" });
-  
+      const file = new File([blob], imageName, { type: "image/jpeg" });
+
       const formData = new FormData();
       formData.append("image", file);
-  
+
       const apiResponse = await fetch("http://127.0.0.1:5000/caption", {
         method: "POST",
         body: formData,
       });
-  
-      // 🚨 Log full API response
+
       console.log("API Response Status:", apiResponse.status);
       const data = await apiResponse.json();
       console.log("API Response Data:", data);
-  
+
       if (!apiResponse.ok || data.error) {
         throw new Error(data.error || `Server Error: ${apiResponse.status}`);
       }
-  
+
       setImages((prevImages) => {
         const newImages = [...prevImages];
         newImages[index] = {
@@ -68,11 +84,13 @@ export default function ExplorePage() {
       });
     } catch (error) {
       console.error(`Error generating caption for image ${index}:`, error);
+      
+      // If API fails, use the fallback caption
       setImages((prevImages) => {
         const newImages = [...prevImages];
         newImages[index] = {
           ...newImages[index],
-          caption: "Caption unavailable",
+          caption: fallbackCaptions[imageName] || "Caption unavailable",
           isLoading: false,
           hasError: true,
         };
@@ -83,8 +101,7 @@ export default function ExplorePage() {
       setLoadingStatus("");
     }
   };
-  
-  
+
 
   // Initialize and generate captions for the first image
   useEffect(() => {
@@ -174,31 +191,42 @@ export default function ExplorePage() {
         </div>
 
         {/* Caption area with loading indicator */}
-        <div className="w-full h-auto text-white flex flex-col justify-center items-center md:items-start pl-0 md:pl-12 mt-8 md:mt-0">
-          {isLoading || images[currentIndex]?.isLoading ? (
-            <div className="flex flex-col items-center">
-              <div className="flex items-center space-x-2 mb-3">
-                <div className="w-4 h-4 bg-purple-600 rounded-full animate-pulse"></div>
-                <div className="w-4 h-4 bg-purple-600 rounded-full animate-pulse delay-150"></div>
-                <div className="w-4 h-4 bg-purple-600 rounded-full animate-pulse delay-300"></div>
-              </div>
-              <span className="text-center">
-                {loadingStatus || "Analyzing image with AI..."}
-              </span>
-            </div>
-          ) : images[currentIndex]?.hasError ? (
-            <div className="text-amber-400 mb-4">
-              <p>Using fallback caption - AI analysis failed.</p>
-              <p className="mt-4">{images[currentIndex]?.caption}</p>
-            </div>
-          ) : (
-            <div key={key} className="w-full">
-              <TextGenerateEffect
-                words={images[currentIndex]?.caption || "Loading caption..."}
-                className="text-[#fafafa]"
-              />
-            </div>
-          )}
+        {/* Caption area with loading indicator */}
+                <div className="w-full h-auto text-white flex flex-col justify-center items-center md:items-start pl-0 md:pl-12 mt-8 md:mt-0">
+                  {isLoading || images[currentIndex]?.isLoading ? (
+                    // Loading state with animated dots
+                    <div className="flex flex-col items-center">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <div className="w-4 h-4 bg-purple-600 rounded-full animate-pulse"></div>
+                        <div className="w-4 h-4 bg-purple-600 rounded-full animate-pulse delay-150"></div>
+                        <div className="w-4 h-4 bg-purple-600 rounded-full animate-pulse delay-300"></div>
+                      </div>
+                      <span className="text-center text-gray-300">
+                        {loadingStatus || "Analyzing image with AI..."}
+                      </span>
+                    </div>
+                  ) : images[currentIndex]?.hasError ? (
+                    // Fallback caption when AI caption fails
+                    <div key={key} className="w-full text-center md:text-left">
+                      <p className="text-sm text-gray-400 mb-2">
+                        Using fallback caption - AI analysis failed.
+                      </p>
+                      <TextGenerateEffect
+                        key={currentIndex} // Force re-render on image change
+                        words={images[currentIndex]?.caption || "Caption unavailable"}
+                        className="text-white text-lg font-semibold"
+                      />
+                    </div>
+                  ) : (
+                    // Display AI-generated caption
+                    <div key={key} className="w-full text-center md:text-left">
+                      <TextGenerateEffect
+                        key={currentIndex} // Force re-render on image change
+                        words={images[currentIndex]?.caption || "Loading caption..."}
+                        className="text-white text-lg font-semibold"
+                      />
+                    </div>
+                  )}
 
           {/* Mic Button */}
           <div className="flex justify-center mt-8">
