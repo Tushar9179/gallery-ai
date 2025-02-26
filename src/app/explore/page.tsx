@@ -31,7 +31,7 @@ export default function ExplorePage() {
   const [loadingStatus, setLoadingStatus] = useState(""); // For more detailed loading status
 
   // Fetch caption for a specific image
-  const fetchCaption = async (index) => {
+  const fetchCaption = async (index: number) => {
     try {
       setLoadingStatus(`Analyzing image ${index + 1} of ${imagePaths.length}...`);
   
@@ -110,7 +110,7 @@ export default function ExplorePage() {
   };
 
   // Function to speak the caption text aloud
-  const handleMicClick = (caption) => {
+  const handleMicClick = (caption:string) => {
     const utterance = new SpeechSynthesisUtterance(caption);
     window.speechSynthesis.speak(utterance);
   };
