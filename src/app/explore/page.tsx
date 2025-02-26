@@ -1,38 +1,116 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
-import ThreeDCardDemo from "@/components/pages/card"; // Import the 3D card
+import ThreeDCardDemo from "@/components/pages/card";
 
-const images = [
-    { src: "/images/image1.jpg", caption: "A glass teapot sitting on a table, holding a bottle of arak, inspired by Derek Jarman. Made of dried flowers, coffee, and musical instruments, with phragmites. A still image from the movie, set in Tehran, full-width, inspired by Jeanne du Maurier. The subject is in brown robes, captured in multi-layered artworks." },
-    { src: "/images/image2.jpg", caption: "A group of ducks floating on a lake, captured in an Unsplash photograph during sunset. The panorama is inspired by Flora Macdonald Reid, with swans and an ocean shoreline visible on the horizon." },
-    { src: "/images/image3.jpg", caption: "A woman standing in front of a bush of purple flowers, a Pexels contest winner. The fashion model has a happy expression, trending on Pexels." },
-    { src: "/images/image4.jpg", caption: "A woman in a pink suit and a man in a white shirt, captured trending on ArtStation. The 30-year-old French woman is walking confidently in the style of Davey Adesida." },
-    { src: "/images/image5.jpg", caption: "A woman taking a picture of herself in a mirror, a Pexels contest winner, inspired by Tran Nguyen. She stands in a grassy field with rippling fabric, symbolizing a distortion of reality." },
-    { src: "/images/image6.jpg", caption: "A man standing in water holding a lantern, featured on Pexels. The scene is set under a moonlit, starry sky, evoking themes of beauty in ugliness, a shining crescent moon, and a sense of longing. The calm ambiance reflects a lunar walk, with the atmosphere of camping." },
-    { src: "/images/image7.jpg", caption: "A person pouring orange juice into a glass, captured on Unsplash in Brazil. The photo shows a large local food spread, with mangoes featured prominently." },
-    { src: "/images/image8.jpg", caption: "A small boat floating in the middle of the ocean, a Pexels contest winner. The image represents a solid object in a void." },
-    { src: "/images/image9.jpg", caption: "A woman in a black top holding a pink ball, depicted in a 90s fashion editorial. The youthful Japanese girl is tall, lanky, and dressed in shamanistic dark blue clothes. The photo features sleek round shapes, with the stone being round as well. The image is playful and cheerful, capturing her in baggy clothing with fringe. This archive photo has a three-color scheme, resembling a magazine photograph." },
-    { src: "/images/image10.jpg", caption: "A man sitting next to a body of water, holding a camera." },
+// Define image paths without captions initially
+const imagePaths = [
+  "/images/image1.jpg",
+  "/images/image2.jpg",
+  "/images/image3.jpg",
+  "/images/image4.jpg",
+  "/images/image5.jpg",
+  "/images/image6.jpg",
+  "/images/image7.jpg",
+  "/images/image8.jpg",
+  "/images/image9.jpg",
+  "/images/image10.jpg",
 ];
 
 export default function ExplorePage() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [key, setKey] = useState(0); // Forces re-render for animation
+  const [key, setKey] = useState(0);
+  const [images, setImages] = useState(imagePaths.map(path => ({
+    src: path,
+    caption: "Loading caption...",
+    isLoading: true,
+    hasError: false
+  })));
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingStatus, setLoadingStatus] = useState(""); // For more detailed loading status
+
+  // Fetch caption for a specific image
+  const fetchCaption = async (index) => {
+    try {
+      setLoadingStatus(`Analyzing image ${index + 1} of ${imagePaths.length}...`);
+  
+      const response = await fetch(imagePaths[index]);
+      const blob = await response.blob();
+      const file = new File([blob], `image${index}.jpg`, { type: "image/jpeg" });
+  
+      const formData = new FormData();
+      formData.append("image", file);
+  
+      const apiResponse = await fetch("http://127.0.0.1:5000/caption", {
+        method: "POST",
+        body: formData,
+      });
+  
+      // 🚨 Log full API response
+      console.log("API Response Status:", apiResponse.status);
+      const data = await apiResponse.json();
+      console.log("API Response Data:", data);
+  
+      if (!apiResponse.ok || data.error) {
+        throw new Error(data.error || `Server Error: ${apiResponse.status}`);
+      }
+  
+      setImages((prevImages) => {
+        const newImages = [...prevImages];
+        newImages[index] = {
+          ...newImages[index],
+          caption: data.caption || "No caption available",
+          isLoading: false,
+          hasError: false,
+        };
+        return newImages;
+      });
+    } catch (error) {
+      console.error(`Error generating caption for image ${index}:`, error);
+      setImages((prevImages) => {
+        const newImages = [...prevImages];
+        newImages[index] = {
+          ...newImages[index],
+          caption: "Caption unavailable",
+          isLoading: false,
+          hasError: true,
+        };
+        return newImages;
+      });
+    } finally {
+      setIsLoading(false);
+      setLoadingStatus("");
+    }
+  };
+  
+  
+
+  // Initialize and generate captions for the first image
+  useEffect(() => {
+    fetchCaption(currentIndex);
+  }, [currentIndex]);
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % images.length);
-    setKey((prev) => prev + 1);
+    const nextIndex = (currentIndex + 1) % images.length;
+    setCurrentIndex(nextIndex);
+    setKey(prev => prev + 1);
+    if (images[nextIndex].isLoading) {
+      fetchCaption(nextIndex);
+    }
   };
 
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-    setKey((prev) => prev + 1);
+    const prevIndex = (currentIndex - 1 + images.length) % images.length;
+    setCurrentIndex(prevIndex);
+    setKey(prev => prev + 1);
+    if (images[prevIndex].isLoading) {
+      fetchCaption(prevIndex);
+    }
   };
 
   // Function to speak the caption text aloud
-  const handleMicClick = (caption: string) => {
+  const handleMicClick = (caption) => {
     const utterance = new SpeechSynthesisUtterance(caption);
     window.speechSynthesis.speak(utterance);
   };
@@ -40,14 +118,15 @@ export default function ExplorePage() {
   return (
     <div className="absolute inset-0 bg-[#000000f5] text-white flex items-center justify-center px-8">
       {/* Main Content Wrapper */}
-      <div className="flex items-center justify-start w-full max-w-6xl gap-16 relative">
+      <div className="flex flex-col md:flex-row items-center justify-start w-full max-w-6xl gap-8 md:gap-16 relative">
         {/* Image & Controls */}
-        <div className="relative flex items-center z-20">
+        <div className="relative flex items-center z-20 w-full md:w-auto">
           {/* Left Arrow */}
           <button
             onClick={handlePrev}
-            className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full transition-all absolute left-[-50px] z-30 shadow-lg hover:shadow-xl transform hover:scale-105"
+            className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full transition-all absolute left-0 md:left-[-50px] z-30 shadow-lg hover:shadow-xl transform hover:scale-105"
             aria-label="Previous image"
+            disabled={isLoading}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -67,14 +146,15 @@ export default function ExplorePage() {
 
           {/* 3D Card with Image */}
           <div className="relative w-full h-full flex items-center justify-center mx-4 z-10">
-            <ThreeDCardDemo src={images[currentIndex].src} />
+            {images.length > 0 && <ThreeDCardDemo src={images[currentIndex]?.src || ""} />}
           </div>
 
           {/* Right Arrow */}
           <button
             onClick={handleNext}
-            className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full transition-all absolute right-[-50px] z-30 shadow-lg hover:shadow-xl transform hover:scale-105"
+            className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full transition-all absolute right-0 md:right-[-50px] z-30 shadow-lg hover:shadow-xl transform hover:scale-105"
             aria-label="Next image"
+            disabled={isLoading}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -93,39 +173,98 @@ export default function ExplorePage() {
           </button>
         </div>
 
-        <div key={key} className="w-full h-auto text-white flex justify-centre pl-12">
-          <TextGenerateEffect
-            words={images[currentIndex].caption}
-            className="text-[#fafafa]"  // Applying the color #fafafa to the text
-          />
-        </div>
+        {/* Caption area with loading indicator */}
+        <div className="w-full h-auto text-white flex flex-col justify-center items-center md:items-start pl-0 md:pl-12 mt-8 md:mt-0">
+          {isLoading || images[currentIndex]?.isLoading ? (
+            <div className="flex flex-col items-center">
+              <div className="flex items-center space-x-2 mb-3">
+                <div className="w-4 h-4 bg-purple-600 rounded-full animate-pulse"></div>
+                <div className="w-4 h-4 bg-purple-600 rounded-full animate-pulse delay-150"></div>
+                <div className="w-4 h-4 bg-purple-600 rounded-full animate-pulse delay-300"></div>
+              </div>
+              <span className="text-center">
+                {loadingStatus || "Analyzing image with AI..."}
+              </span>
+            </div>
+          ) : images[currentIndex]?.hasError ? (
+            <div className="text-amber-400 mb-4">
+              <p>Using fallback caption - AI analysis failed.</p>
+              <p className="mt-4">{images[currentIndex]?.caption}</p>
+            </div>
+          ) : (
+            <div key={key} className="w-full">
+              <TextGenerateEffect
+                words={images[currentIndex]?.caption || "Loading caption..."}
+                className="text-[#fafafa]"
+              />
+            </div>
+          )}
 
-        {/* Mic Button */}
-        <div className="flex justify-center mt-4">
-          <button
-            onClick={() => handleMicClick(images[currentIndex].caption)}
-            className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full transition-all"
-            aria-label="Speak Caption"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="lucide lucide-mic"
+          {/* Mic Button */}
+          <div className="flex justify-center mt-8">
+            <button
+              onClick={() => handleMicClick(images[currentIndex]?.caption || "No caption available")}
+              className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full transition-all"
+              aria-label="Speak Caption"
+              disabled={isLoading || images[currentIndex]?.isLoading}
             >
-              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-              <line x1="12" x2="12" y1="19" y2="22" />
-            </svg>
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="lucide lucide-mic"
+              >
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" x2="12" y1="19" y2="22" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Image progression indicator */}
+      {images.length > 0 && (
+        <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+          <div className="flex space-x-2">
+            {images.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setCurrentIndex(index);
+                  setKey(prev => prev + 1);
+                  if (images[index].isLoading) {
+                    fetchCaption(index);
+                  }
+                }}
+                className={`w-3 h-3 rounded-full ${
+                  index === currentIndex ? 'bg-purple-600' : 'bg-gray-600'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Loading indicator for initial page load */}
+      {images.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
+          <div className="text-center">
+            <div className="flex justify-center space-x-2 mb-4">
+              <div className="w-5 h-5 bg-purple-600 rounded-full animate-pulse"></div>
+              <div className="w-5 h-5 bg-purple-600 rounded-full animate-pulse delay-150"></div>
+              <div className="w-5 h-5 bg-purple-600 rounded-full animate-pulse delay-300"></div>
+            </div>
+            <p className="text-white text-lg">Loading gallery...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
