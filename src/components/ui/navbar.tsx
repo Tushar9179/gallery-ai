@@ -1,33 +1,70 @@
-"use client";
-import React, { useState } from "react";
-import { HoveredLink, Menu, MenuItem } from "../ui/navbar-menu";
-import { cn } from "@/lib/utils";
-import exp from "constants";
-
-export function Navbar() {
-  const [active, setActive] = useState<string | null>(null);
+export function NavbarDemo() {
   return (
-    <div className={cn("fixed top-0 inset-x-0 bg-white dark:bg-gray-900 shadow-md z-50 p-4")}> 
-      <Menu setActive={setActive}>
-        <MenuItem setActive={setActive} active={active} item="Home">
-          <div className="text-sm p-2">Go back to the main dashboard</div>
-        </MenuItem>
-        <MenuItem setActive={setActive} active={active} item="Gallery">
-          <div className="text-sm grid grid-cols-3 gap-2 p-2">
-            <img src="/gallery1.jpg" alt="Preview 1" className="w-16 h-16 object-cover rounded-md" />
-            <img src="/gallery2.jpg" alt="Preview 2" className="w-16 h-16 object-cover rounded-md" />
-            <img src="/gallery3.jpg" alt="Preview 3" className="w-16 h-16 object-cover rounded-md" />
-          </div>
-        </MenuItem>
-        <MenuItem setActive={setActive} active={active} item="Favorites">
-          <div className="text-sm p-2">Your liked photos in one place</div>
-        </MenuItem>
-        <MenuItem setActive={setActive} active={active} item="Upload">
-          <div className="text-sm p-2">Add new images to the gallery</div>
-        </MenuItem>
-      </Menu>
+    <div className="bg-black w-full">
+      <Navbar className="top-10" />
     </div>
   );
 }
 
-export default Navbar;
+function Navbar({ className }: { className?: string }) {
+  const [active, setActive] = useState<string | null>(null);
+  return (
+    <div
+      className={cn(
+        "bg-black", // Black background for navbar
+        "w-full", // Full width
+        "rounded-full", // Oval shape for the navbar
+        "p-4", // Add padding to give it space
+        "fixed top-10 inset-x-0 z-50", // Positioning the navbar at the top
+        className // Custom class to add any additional styles
+      )}
+    >
+      <Menu setActive={setActive} />
+    </div>
+  );
+}
+
+export function Menu({ children, setActive }) {
+  return (
+    <nav>
+      <ul className="flex space-x-4">{children}</ul>
+    </nav>
+  );
+}
+
+export function MenuItem({ item, children, setActive, active, previewUrl }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <li
+      className="relative"
+      onMouseEnter={() => {
+        setActive(item);
+        setIsHovered(true);
+      }}
+      onMouseLeave={() => {
+        setActive(null);
+        setIsHovered(false);
+      }}
+    >
+      {children}
+      {active === item && isHovered && previewUrl && (
+        <div className="absolute top-full left-0 w-64 h-64 mt-2 bg-black rounded-lg">
+          <iframe
+            src={previewUrl}
+            className="w-full h-full border-0 rounded-lg"
+            title={`${item} preview`}
+          />
+        </div>
+      )}
+    </li>
+  );
+}
+
+export function HoveredLink({ href, children, className }) {
+  return (
+    <a href={href} className={cn("hover:underline", className)}>
+      {children}
+    </a>
+  );
+}

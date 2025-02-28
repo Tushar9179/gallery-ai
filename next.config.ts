@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
 };
 module.exports = {
   images: {
-    domains: ['res.cloudinary.com'],  // Add Cloudinary's domain here
+    domains: ['res.cloudinary.com','assets.aceternity.com'],  // Add Cloudinary's domain here
   },
 }
 
