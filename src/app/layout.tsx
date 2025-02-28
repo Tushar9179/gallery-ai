@@ -3,8 +3,8 @@ import "./globals.css";
 import AccessibilityMenu from "@/components/ui/AccessibilityMenu";
 
 export const metadata: Metadata = {
-  title: "Gallery AI ",
-  description: "Gallery AI for the visually imapired",
+  title: "Gallery AI",
+  description: "Gallery AI for the visually impaired",
 };
 
 export default function RootLayout({
@@ -15,10 +15,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <main >
-        {children}
         <AccessibilityMenu />
+        <main>
+          {children}
         </main>
+
       </body>
     </html>
   );

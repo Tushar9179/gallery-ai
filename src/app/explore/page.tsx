@@ -18,6 +18,37 @@ const imagePaths = [
   "/images/image10.jpg",
 ];
 
+//api funtion 
+const uploadImageAndGetCaption = async (imagePath: string): Promise<string> => {
+  const imageName = imagePath.split("/").pop() || "";
+  
+  try {
+    const response = await fetch(imagePath);
+    const blob = await response.blob();
+    const file = new File([blob], imageName, { type: "image/jpeg" });
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const apiResponse = await fetch("http://127.0.0.1:5000/classify/", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await apiResponse.json();
+
+    if (!apiResponse.ok || data.error) {
+      throw new Error(data.error || `Server Error: ${apiResponse.status}`);
+    }
+
+    return data.caption || "No caption available";
+  } catch (error) {
+    console.error(`Error generating caption for ${imageName}:`, error);
+    return "Caption unavailable";
+  }
+};
+
+
 export default function ExplorePage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [key, setKey] = useState(0);
@@ -48,35 +79,16 @@ export default function ExplorePage() {
   // Fetch caption for a specific image
   const fetchCaption = async (index: number) => {
     const imageName = imagePaths[index].split("/").pop() || "";
-    
+  
     try {
       setLoadingStatus(`Analyzing image ${index + 1} of ${imagePaths.length}...`);
-
-      const response = await fetch(imagePaths[index]);
-      const blob = await response.blob();
-      const file = new File([blob], imageName, { type: "image/jpeg" });
-
-      const formData = new FormData();
-      formData.append("image", file);
-
-      const apiResponse = await fetch("http://127.0.0.1:5000/caption", {
-        method: "POST",
-        body: formData,
-      });
-
-      console.log("API Response Status:", apiResponse.status);
-      const data = await apiResponse.json();
-      console.log("API Response Data:", data);
-
-      if (!apiResponse.ok || data.error) {
-        throw new Error(data.error || `Server Error: ${apiResponse.status}`);
-      }
-
+      const caption = await uploadImageAndGetCaption(imagePaths[index]);
+  
       setImages((prevImages) => {
         const newImages = [...prevImages];
         newImages[index] = {
           ...newImages[index],
-          caption: data.caption || "No caption available",
+          caption,
           isLoading: false,
           hasError: false,
         };
@@ -84,8 +96,7 @@ export default function ExplorePage() {
       });
     } catch (error) {
       console.error(`Error generating caption for image ${index}:`, error);
-      
-      // If API fails, use the fallback caption
+  
       setImages((prevImages) => {
         const newImages = [...prevImages];
         newImages[index] = {
